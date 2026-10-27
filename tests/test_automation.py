@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """test_automation.py - run publish.py and generate.py end to end against
-local mock servers that imitate the Graph API and GitHub Models.
+local mock servers that imitate the Graph API and an OpenAI-compatible LLM API
+(the shape Gemini and Groq both expose).
 
-Nothing touches the real Facebook or GitHub. The scripts run unmodified;
-only GRAPH_BASE and MODELS_URL point at localhost.
+Nothing touches the real Facebook or any AI provider. The scripts run
+unmodified; only GRAPH_BASE and LLM_BASE_URL point at localhost.
 
     python3 tests/test_automation.py
 """
@@ -46,6 +47,13 @@ class Mock(BaseHTTPRequestHandler):
     def do_GET(self):
         u = urlparse(self.path)
         q = parse_qs(u.query)
+        if u.path == "/llm/models":
+            calls.append(("LIST", self.headers.get("Authorization", "")))
+            if self.headers.get("Authorization") != "Bearer test-key":
+                return self.reply(401, {"error": {"message": "API key not valid"}})
+            return self.reply(200, {"object": "list", "data": [
+                {"id": "models/gemini-2.5-flash-lite"}, {"id": "models/gemini-2.5-flash"},
+                {"id": "models/embedding-001"}]})
         calls.append(("GET", u.path, q))
         if q.get("access_token", [""])[0] == "BAD":
             return self.reply(400, {"error": {"type": "OAuthException", "code": 190, "message": "Invalid token"}})
@@ -56,7 +64,7 @@ class Mock(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length", 0))
         raw = self.rfile.read(n)
         ctype = self.headers.get("Content-Type", "")
-        if u.path == "/models":
+        if u.path == "/llm/chat/completions":
             body = json.loads(raw)
             calls.append(("MODELS", body["model"], body["messages"][-1]["content"][:60]))
             if "linter failed" in body["messages"][-1]["content"]:
@@ -65,7 +73,8 @@ class Mock(BaseHTTPRequestHandler):
                 posts = [{"slot": 1, "type": "text", "text": GOOD_POST, "uses": "46 cakes"},
                          {"slot": 2, "type": "text", "text": BAIT_POST, "uses": "new flavours"},
                          {"slot": 3, "type": "text", "text": "Our {{new opening hours}} start next week in Patan.", "uses": "hours"}]
-            return self.reply(200, {"choices": [{"message": {"content": json.dumps({"posts": posts})}}]})
+            # wrap in a code fence like Gemini sometimes does
+            return self.reply(200, {"choices": [{"message": {"content": "```json\n" + json.dumps({"posts": posts}) + "\n```"}}]})
         if "multipart" in ctype:
             fields = {"_multipart": True, "has_source": b'name="source"' in raw,
                       "token": re.search(rb'name="access_token"\r\n\r\n([^\r]*)', raw).group(1).decode()}
@@ -108,8 +117,8 @@ def main():
     repo = os.path.join(tmp, "repo")
     shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__", "queue", "published", "failed"))
     env = dict(os.environ, GRAPH_BASE=f"http://127.0.0.1:{port}", FB_PAGE_ID="123",
-               FB_PAGE_TOKEN="GOODTOKEN", MODELS_URL=f"http://127.0.0.1:{port}/models",
-               GITHUB_TOKEN="test-token")
+               FB_PAGE_TOKEN="GOODTOKEN", LLM_BASE_URL=f"http://127.0.0.1:{port}/llm",
+               LLM_API_KEY="test-key")
     pub = os.path.join(repo, "automation", "publish.py")
     gen = os.path.join(repo, "automation", "generate.py")
 
@@ -202,6 +211,14 @@ def main():
         check("PR body flags {{placeholder}} draft", "needs your input" in pr)
         r2 = run(pub, "--list", "--now", "2026-10-31T09:00:00+05:45")
         check("drafts parse in publish.py", "INVALID" not in r2.stdout, r2.stdout)
+        check("auto-picked gemini-2.5-flash from /models", model_calls and model_calls[0][1] == "gemini-2.5-flash", str(model_calls))
+        check("PR body names the model", "gemini-2.5-flash" in pr)
+
+        # missing / bad key
+        r = run(gen, "--dry-run", LLM_API_KEY="")
+        check("generate explains missing key", r.returncode != 0 and "LLM_API_KEY" in r.stderr, r.stderr)
+        r = run(gen, "--dry-run", LLM_API_KEY="wrong")
+        check("generate explains bad key", r.returncode != 0 and "401" in r.stderr and "wrong" not in r.stderr, r.stderr)
 
         # blank voice is refused
         shutil.copy(os.path.join(ROOT, "templates", "voice.md"), os.path.join(repo, "brand", "voice.md"))
