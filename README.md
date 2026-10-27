@@ -1,6 +1,8 @@
 # The Facebook agent skill
 
-Fourteen Claude skills that run a Facebook Page or profile. Free, MIT, no
+[![test](https://github.com/ramkesh430/facebook-agent-skill/actions/workflows/test.yml/badge.svg)](https://github.com/ramkesh430/facebook-agent-skill/actions/workflows/test.yml)
+
+Sixteen Claude skills that run a Facebook Page or profile. Free, MIT, no
 signup, no API key, nothing to connect.
 
 One writes your Reels off 24 hook formulas and scores the hook before you shoot
@@ -8,7 +10,8 @@ it. One finds the posts that are actually working in your niche and ranks them
 by how far each beat its own account. One writes the post and shows you
 exactly what a phone shows before **See more**, then fails it if it contains
 engagement bait Meta demotes. One scores your Page out of 100. One runs your
-Group. One plans the week.
+Group. One plans a Live, one decides whether a post is worth boosting, and one
+plans the week.
 
 And one is the humanizer: it strips em dashes, stock vocabulary, "like and
 share" bait and invisible characters out of a draft, then scores what's left
@@ -53,17 +56,19 @@ Then spend ten minutes on `templates/voice.md`. Copy it to
 `~/.claude/facebook/voice.md` and fill it in, or send Claude three of your own
 posts and say "write my voice.md from these". Every skill reads it.
 
-## The fourteen
+## The sixteen
 
 | command | what it does |
 |---|---|
 | `/fb-reel` | One idea into a Reel. Three hooks from 24 formulas, scored, then the script, on-screen text and a timed beat sheet. |
 | `/fb-viral` | Finds what's working in your niche, ranks it by multiple over each account's own median, names the formula, writes the swipe file. |
-| `/fb-post` | Posts and captions, linted. Shows the ~150 characters mobile shows before See more. Fails engagement bait. Handles links. |
+| `/fb-post` | Posts and captions, linted. Shows the ~150 characters mobile shows before See more. Fails engagement bait in English and Nepali. Handles links. |
 | `/fb-photo` | Single photos, multi-photo posts and albums: which image leads, order, overlays, sizes, alt text. |
 | `/fb-story` | The daily Story sequence, which sticker does which job, and the Messenger reply it starts. |
 | `/fb-page` | Scores your Page on a 14-part, 100-point rubric, then rewrites in fix-first order. |
 | `/fb-group` | Run your own Group (name, rules, welcome, weekly prompts) or post in others' without getting removed. |
+| `/fb-live` | A Live from announcement to replay clips: run-of-show, the first 60 seconds, comment prompts, the ask. |
+| `/fb-boost` | Whether a post is worth boosting, the goal, audience and copy. Never spends; you set up and pay. |
 | `/fb-plan` | The week: what, which format, when, and the Pages and Groups to engage with. |
 | `/fb-human` | The humanizer. Two scripts that actually run. |
 | `/fb-comment` | Comments on other people's posts. Nine types, picked by what the post is. |
@@ -84,6 +89,20 @@ python3 skills/fb-human/humanize.py draft.txt --report # clean it, show changes
 python3 skills/fb-human/detect.py before.txt after.txt # score and prove the delta
 python3 skills/fb-viral/swipe.py captured.tsv --out ~/.claude/facebook/swipe.md
 ```
+
+Try them on the sample files in `examples/`, and run the whole test suite
+(49 checks, standard library only):
+
+```bash
+python3 tests/run_tests.py
+```
+
+### Nepali support
+
+`post.py`, `hookscore.py` and the humanizer also catch engagement bait written
+in Nepali, romanized or Devanagari: "like garnus", "bhane like", "sathi lai tag
+garnus", "'ho' lekhnus", "शेयर गर्नुहोस्". Greetings like "Namaste sathi haru"
+are treated as greetings. Add your own phrases to `slop.json`.
 
 `post.py` on a typical "business announcement" post:
 
@@ -152,11 +171,13 @@ skills/fb-reel/hooks.json      24 hook formulas + dealbreakers, with match regex
 skills/fb-reel/hookscore.py    five-property hook panel
 skills/fb-reel/beats.py        script -> timed beat sheet
 skills/fb-post/post.py         See-more preview and post linter
-skills/fb-human/slop.json      ~190 terms, 20 invisible classes, 18 structural tells
+skills/fb-human/slop.json      ~195 terms, 20 invisible classes, 19 structural tells
 skills/fb-human/humanize.py    the three cleaning passes
 skills/fb-human/detect.py      the five-check panel
 skills/fb-viral/swipe.py       outlier ranking and formula classification
 skills/fb-page/rubric.json     the 100-point Page score
+examples/                      sample hooks, script, posts (incl. Nepali), captured.tsv
+tests/run_tests.py             end-to-end tests for every tool (run by GitHub Actions)
 templates/voice.md             your voice profile. Fill this in first.
 ```
 
