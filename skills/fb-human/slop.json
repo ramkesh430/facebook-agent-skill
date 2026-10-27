@@ -1092,6 +1092,41 @@
    "find": "don't forget to like our page",
    "replace": "",
    "family": "facebook"
+  },
+  {
+   "find": "like ra share garnus",
+   "replace": "",
+   "family": "facebook-ne"
+  },
+  {
+   "find": "like and share garnus",
+   "replace": "",
+   "family": "facebook-ne"
+  },
+  {
+   "find": "page like garnus",
+   "replace": "",
+   "family": "facebook-ne"
+  },
+  {
+   "find": "sathi haru lai tag garnus",
+   "replace": "",
+   "family": "facebook-ne"
+  },
+  {
+   "find": "sabai lai share garnus",
+   "replace": "",
+   "family": "facebook-ne"
+  },
+  {
+   "find": "namaste sathi haru",
+   "replace": "",
+   "family": "facebook-ne"
+  },
+  {
+   "find": "namaskar sathi haru",
+   "replace": "",
+   "family": "facebook-ne"
   }
  ],
  "structures": [
@@ -1202,6 +1237,12 @@
    "regex": "(?i)\\blink in (?:the )?(?:first )?comments?\\b.{0,5}\\blink in (?:the )?comments?\\b",
    "name": "Repeated 'link in comments'",
    "fix": "Say it once."
+  },
+  {
+   "id": "np-bait",
+   "regex": "(?i)\\b(like|share|tag|comment)\\s+(garnus|garnuhos|garnu ?hola|gara|garau|gardinus|gardinuhos)\\b|\\b(bhane|vane)\\s+(like|share|comment)\\b|(लाइक|शेयर|ट्याग|कमेन्ट)\\s*(गर्नुहोस्|गर्नुस्|गर्नु होला)",
+   "name": "Facebook engagement bait (Nepali)",
+   "fix": "'Like/share/tag garnus' as a trade is demoted. Ask something the post actually earns, e.g. a real question about this post."
   }
  ]
 }
