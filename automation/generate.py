@@ -39,6 +39,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -143,43 +144,64 @@ def request(method, path, token, body=None):
     return status, parsed, raw[:300].replace(token, "***") if token else raw[:300]
 
 
-def pick_model(wanted, token):
+def pick_models(wanted, token):
+    """Ordered list of models to try: the wanted one, or the provider's best few."""
     if wanted and wanted != "auto":
-        return wanted
+        return [wanted]
     status, data, raw = request("GET", "models", token)
     if status != 200 or not isinstance(data, dict):
         raise SystemExit(f"could not list models ({status}): {raw}  -> check LLM_API_KEY and LLM_BASE_URL")
     ids = [m.get("id", "").replace("models/", "") for m in data.get("data", [])]
-    for p in PREFERRED:
-        if p in ids:
-            return p
-    flash = [i for i in ids if "flash" in i and "lite" not in i and "image" not in i and "tts" not in i]
-    if flash:
-        return sorted(flash)[-1]
-    if ids:
-        return ids[0]
-    raise SystemExit("the provider listed no models")
+    out = [p for p in PREFERRED if p in ids]
+    flash = sorted((i for i in ids if "flash" in i and "lite" not in i and "image" not in i
+                    and "tts" not in i and "audio" not in i and i not in out), reverse=True)
+    out += flash
+    out += [i for i in ids if "flash-lite" in i and i not in out]   # last resort, still free
+    if not out and ids:
+        out = ids[:1]
+    if not out:
+        raise SystemExit("the provider listed no models")
+    return out[:4]
 
 
-def chat(messages, model, token):
-    body = {"model": model, "messages": messages, "temperature": 0.7,
-            "response_format": {"type": "json_object"}}
-    status, data, raw = request("POST", "chat/completions", token, body)
-    if status == 400 and "response_format" in raw:
-        body.pop("response_format")
-        status, data, raw = request("POST", "chat/completions", token, body)
-    if status == 429:
-        raise SystemExit("free-tier rate limit hit; the next weekly run (or a manual re-run later) will work")
-    if status in (401, 403):
-        raise SystemExit(f"API key rejected ({status}): {raw}  -> regenerate LLM_API_KEY")
-    if status != 200 or not isinstance(data, dict) or not data.get("choices"):
-        raise SystemExit(f"model call failed ({status}): {raw}")
-    content = data["choices"][0]["message"].get("content") or ""
-    content = re.sub(r"^```(?:json)?|```$", "", content.strip(), flags=re.M)
-    m = re.search(r"\{.*\}", content, re.S)
-    if not m:
-        raise SystemExit(f"model did not return JSON: {content[:200]}")
-    return json.loads(m.group(0))
+RETRYABLE = (429, 500, 502, 503, 504)
+RETRY_DELAY = float(os.environ.get("RETRY_DELAY", "20"))
+
+
+def chat(messages, models, token):
+    """Try each model, retrying busy/overloaded responses. Returns (json, model_used)."""
+    last = ""
+    for model in models:
+        body = {"model": model, "messages": messages, "temperature": 0.7,
+                "response_format": {"type": "json_object"}}
+        for attempt in range(3):
+            status, data, raw = request("POST", "chat/completions", token, body)
+            if status == 400 and "response_format" in raw and "response_format" in body:
+                body.pop("response_format")
+                status, data, raw = request("POST", "chat/completions", token, body)
+            if status in (401, 403):
+                raise SystemExit(f"API key rejected ({status}): {raw}  -> regenerate LLM_API_KEY")
+            if status in RETRYABLE:
+                last = f"{model}: {status} {raw[:120]}"
+                print(f"  {model} busy ({status}), attempt {attempt + 1}/3", file=sys.stderr)
+                time.sleep(RETRY_DELAY * (attempt + 1))
+                continue
+            if status != 200 or not isinstance(data, dict) or not data.get("choices"):
+                last = f"{model}: {status} {raw[:200]}"
+                break   # not retryable for this model; try the next one
+            content = data["choices"][0]["message"].get("content") or ""
+            content = re.sub(r"^```(?:json)?|```$", "", content.strip(), flags=re.M)
+            m = re.search(r"\{.*\}", content, re.S)
+            if not m:
+                last = f"{model}: did not return JSON: {content[:120]}"
+                break
+            try:
+                return json.loads(m.group(0)), model
+            except ValueError:
+                last = f"{model}: returned broken JSON"
+                break
+        print(f"  giving up on {model}, trying the next model", file=sys.stderr)
+    raise SystemExit(f"every model failed; last error: {last}. The next weekly run (or a manual re-run) will try again.")
 
 
 def lint(text):
@@ -226,8 +248,9 @@ def main():
     user = user[:MAX_INPUT_CHARS]
     messages = [{"role": "system", "content": RULES}, {"role": "user", "content": user}]
 
-    model = pick_model(os.environ.get("MODEL") or cfg.get("model", "auto"), token)
-    out = chat(messages, model, token)
+    models = pick_models(os.environ.get("MODEL") or cfg.get("model", "auto"), token)
+    out, model = chat(messages, models, token)
+    models = [model] + [m for m in models if m != model]
     posts = out.get("posts", [])[: len(slots)]
     kept, dropped, link_posts = [], [], 0
     for i, p in enumerate(posts):
@@ -238,10 +261,10 @@ def main():
         text = text.strip()
         ok, report = lint(text)
         if not ok:
-            fix = chat(messages + [
+            fix, _ = chat(messages + [
                 {"role": "assistant", "content": json.dumps({"posts": [p]})},
                 {"role": "user", "content": "The linter failed this post:\n" + report +
-                 "\nRewrite it to fix every FAIL. Same JSON shape, one post."}], model, token)
+                 "\nRewrite it to fix every FAIL. Same JSON shape, one post."}], models, token)
             fixed = (fix.get("posts") or [{}])[0].get("text", "")
             text, _, _ = humanize(fixed)
             text = text.strip()
