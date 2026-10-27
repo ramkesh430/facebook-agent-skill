@@ -1,12 +1,24 @@
 {
   "timezone": "+05:45",
   "slots": [
-    {"day": "mon", "time": "18:30"},
-    {"day": "wed", "time": "12:15"},
-    {"day": "fri", "time": "18:30"},
-    {"day": "sat", "time": "10:45"}
+    {
+      "day": "mon",
+      "time": "18:30"
+    },
+    {
+      "day": "wed",
+      "time": "12:15"
+    },
+    {
+      "day": "fri",
+      "time": "18:30"
+    },
+    {
+      "day": "sat",
+      "time": "10:45"
+    }
   ],
-  "model": "openai/gpt-4.1",
+  "model": "auto",
   "language": "Write in the language and mix the voice file describes. If it says nothing, write plain English.",
   "max_link_posts_per_week": 1,
   "first_comment_link": ""

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """generate.py - draft next week's Facebook posts into queue/, for you to approve.
 
-Runs weekly in GitHub Actions (automation/workflows/generate.yml), using
-GitHub Models through the workflow's own GITHUB_TOKEN: free, no extra key.
-The workflow opens a pull request. Merging it is the approval; nothing is
+Runs weekly in GitHub Actions (automation/workflows/generate.yml), using any
+OpenAI-compatible chat API. The default is Google Gemini's free tier (no card
+needed; key from aistudio.google.com). Groq's free tier works too. The
+workflow opens a pull request. Merging it is the approval; nothing is
 published from a draft that hasn't been merged.
 
 Inputs (all in the repo):
@@ -19,9 +20,11 @@ Every draft is cleaned by the pack's humanizer and linted by post.py. A draft
 that fails the linter gets one repair attempt, then is dropped.
 
 Environment:
-  GITHUB_TOKEN   (Actions provides it; needs `models: read`)
-  MODELS_URL     default https://models.github.ai/inference/chat/completions
-  MODEL          overrides config.json
+  LLM_API_KEY    required. A Gemini (or Groq) API key, stored as a GitHub secret.
+  LLM_BASE_URL   default https://generativelanguage.googleapis.com/v1beta/openai
+                 Groq: https://api.groq.com/openai/v1
+  MODEL          overrides config.json. "auto" (default) picks the best
+                 available model from the provider's /models list.
 
 Usage:
   python3 automation/generate.py --summary pr_body.md
@@ -44,9 +47,12 @@ sys.path.insert(0, os.path.join(ROOT, "skills", "fb-human"))
 from humanize import humanize  # noqa: E402
 
 LINTER = os.path.join(ROOT, "skills", "fb-post", "post.py")
-MODELS_URL = os.environ.get("MODELS_URL", "https://models.github.ai/inference/chat/completions")
+BASE_URL = os.environ.get("LLM_BASE_URL", "").rstrip("/") or "https://generativelanguage.googleapis.com/v1beta/openai"
+# preference order for "auto"; the first one the provider lists is used
+PREFERRED = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-3-flash", "gemini-2.5-flash",
+             "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "openai/gpt-oss-20b"]
 DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-MAX_INPUT_CHARS = 14000   # free-tier models accept roughly 8k input tokens
+MAX_INPUT_CHARS = 14000   # keeps each request well inside free-tier token limits
 
 RULES = """You write Facebook Page posts for a small business or creator, in their voice.
 
@@ -114,25 +120,65 @@ def recent_posts(n=20):
     return [l.split("\t")[-1] for l in lines if "\t" in l]
 
 
-def chat(messages, model, token):
-    body = {"model": model, "messages": messages, "temperature": 0.7,
-            "response_format": {"type": "json_object"}}
-    req = urllib.request.Request(MODELS_URL, data=json.dumps(body).encode("utf-8"), method="POST")
+def request(method, path, token, body=None):
+    url = f"{BASE_URL}/{path.lstrip('/')}"
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    req = urllib.request.Request(url, data=data, method=method)
     req.add_header("Authorization", f"Bearer {token}")
     req.add_header("Content-Type", "application/json")
     req.add_header("Accept", "application/json")
     try:
-        with urllib.request.urlopen(req, timeout=120) as r:
-            data = json.loads(r.read().decode("utf-8"))
+        with urllib.request.urlopen(req, timeout=180) as r:
+            raw = r.read().decode("utf-8", "replace")
+            status = r.status
     except urllib.error.HTTPError as e:
-        detail = e.read().decode("utf-8", "replace")[:300]
-        if e.code == 429:
-            raise SystemExit("GitHub Models rate limit hit. The free tier has daily limits; run again later.")
-        raise SystemExit(f"GitHub Models error {e.code}: {detail}")
-    content = data["choices"][0]["message"]["content"]
+        raw = e.read().decode("utf-8", "replace")
+        status = e.code
+    except urllib.error.URLError as e:
+        raise SystemExit(f"cannot reach {BASE_URL}: {e.reason}")
+    try:
+        parsed = json.loads(raw) if raw.strip() else None
+    except ValueError:
+        parsed = None
+    return status, parsed, raw[:300].replace(token, "***") if token else raw[:300]
+
+
+def pick_model(wanted, token):
+    if wanted and wanted != "auto":
+        return wanted
+    status, data, raw = request("GET", "models", token)
+    if status != 200 or not isinstance(data, dict):
+        raise SystemExit(f"could not list models ({status}): {raw}  -> check LLM_API_KEY and LLM_BASE_URL")
+    ids = [m.get("id", "").replace("models/", "") for m in data.get("data", [])]
+    for p in PREFERRED:
+        if p in ids:
+            return p
+    flash = [i for i in ids if "flash" in i and "lite" not in i and "image" not in i and "tts" not in i]
+    if flash:
+        return sorted(flash)[-1]
+    if ids:
+        return ids[0]
+    raise SystemExit("the provider listed no models")
+
+
+def chat(messages, model, token):
+    body = {"model": model, "messages": messages, "temperature": 0.7,
+            "response_format": {"type": "json_object"}}
+    status, data, raw = request("POST", "chat/completions", token, body)
+    if status == 400 and "response_format" in raw:
+        body.pop("response_format")
+        status, data, raw = request("POST", "chat/completions", token, body)
+    if status == 429:
+        raise SystemExit("free-tier rate limit hit; the next weekly run (or a manual re-run later) will work")
+    if status in (401, 403):
+        raise SystemExit(f"API key rejected ({status}): {raw}  -> regenerate LLM_API_KEY")
+    if status != 200 or not isinstance(data, dict) or not data.get("choices"):
+        raise SystemExit(f"model call failed ({status}): {raw}")
+    content = data["choices"][0]["message"].get("content") or ""
+    content = re.sub(r"^```(?:json)?|```$", "", content.strip(), flags=re.M)
     m = re.search(r"\{.*\}", content, re.S)
     if not m:
-        raise SystemExit("model did not return JSON")
+        raise SystemExit(f"model did not return JSON: {content[:200]}")
     return json.loads(m.group(0))
 
 
@@ -155,10 +201,9 @@ def main():
     a = ap.parse_args()
 
     cfg = json.loads(read("automation/config.json") or "{}")
-    model = os.environ.get("MODEL") or cfg.get("model", "openai/gpt-4.1")
-    token = os.environ.get("GITHUB_TOKEN", "")
+    token = os.environ.get("LLM_API_KEY", "")
     if not token:
-        raise SystemExit("GITHUB_TOKEN is not set (the workflow needs `permissions: models: read`)")
+        raise SystemExit("LLM_API_KEY is not set. Add a free Gemini key as the repo secret LLM_API_KEY (see automation/SETUP.md).")
 
     voice = read("brand/voice.md", 6000)
     filled = re.findall(r":\*\*[ \t]*[^\s(]", voice)   # "**Name:** RAM", not "**Name:**" or "(hint)"
@@ -181,6 +226,7 @@ def main():
     user = user[:MAX_INPUT_CHARS]
     messages = [{"role": "system", "content": RULES}, {"role": "user", "content": user}]
 
+    model = pick_model(os.environ.get("MODEL") or cfg.get("model", "auto"), token)
     out = chat(messages, model, token)
     posts = out.get("posts", [])[: len(slots)]
     kept, dropped, link_posts = [], [], 0
@@ -213,7 +259,7 @@ def main():
                      "first_comment": fc, "uses": p.get("uses", "")})
 
     lines = [f"## Drafts for the week of {slots[0].date()}", "",
-             f"Model: `{model}` via GitHub Models. Merge this PR to approve; publish.py posts each one at its time.",
+             f"Model: `{model}` via {BASE_URL.split('/')[2]}. Merge this PR to approve; publish.py posts each one at its time.",
              "Edit any file in this PR before merging. Close the PR to skip the week.", ""]
     os.makedirs(os.path.join(ROOT, "queue"), exist_ok=True)
     for k in kept:

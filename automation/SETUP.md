@@ -4,14 +4,14 @@ Free, runs on GitHub. Every week it drafts your posts, you approve them with
 one tap, and it posts each one to your Facebook Page at its time.
 
 ```
-Saturday 08:08 (Nepal)   generate.yml drafts next week's posts with GitHub Models
+Saturday 08:08 (Nepal)   generate.yml drafts next week's posts with Gemini (free tier)
                          -> opens a pull request; GitHub emails you
 You                      read the drafts on your phone, edit if needed, tap Merge
 Every hour               publish.yml posts anything that's due through the Graph API,
                          adds the first comment, records the post id
 ```
 
-Cost: 0. GitHub Actions free minutes, GitHub Models free tier, Meta Graph API.
+Cost: 0. GitHub Actions free minutes, Gemini API free tier (no card), Meta Graph API.
 
 What it does **not** automate, on purpose:
 
@@ -58,7 +58,14 @@ python3 automation/get_page_token.py
 It asks for the App ID, App Secret (Settings > Basic) and the token from step
 2, and prints `FB_PAGE_ID` and `FB_PAGE_TOKEN`. It saves nothing.
 
-### 4. Secrets
+### 4. A free AI key (Gemini)
+
+1. Go to aistudio.google.com, sign in with a Google account, click **Get API key** > **Create API key**.
+2. No card is needed for the free tier. Note: on the free tier Google may use prompts to improve its products, so don't put anything secret in `brand/`.
+
+Prefer Groq? Create a key at console.groq.com, and add a repo **variable** (not secret) `LLM_BASE_URL` = `https://api.groq.com/openai/v1`.
+
+### 5. Secrets
 
 Private repo > Settings > Secrets and variables > Actions > **New repository secret**:
 
@@ -66,10 +73,11 @@ Private repo > Settings > Secrets and variables > Actions > **New repository sec
 |---|---|
 | `FB_PAGE_ID` | the id from step 3 |
 | `FB_PAGE_TOKEN` | the token from step 3 |
+| `LLM_API_KEY` | the Gemini (or Groq) key from step 4 |
 
 Never paste the token into a chat, an issue, a commit or a file.
 
-### 5. Test
+### 6. Test
 
 - Actions > **publish** > Run workflow > tick "Only check" > Run. It should
   say `CHECK OK  token can act as Page: <your Page>`.
@@ -94,7 +102,7 @@ Never paste the token into a chat, an issue, a commit or a file.
 
   `type: photo` with `image: brand/images/x.jpg` (upload the image to the repo)
   or an https URL. `type: link` with `link: https://...`.
-- **Change the schedule**: `automation/config.json` (`slots`, `timezone`, `model`).
+- **Change the schedule**: `automation/config.json` (`slots`, `timezone`, `model`; `auto` picks the best free model the provider lists).
 - **See what went out**: `published/` and `published/log.tsv`.
 - **See what was refused**: `failed/`, each file says why (linter FAIL,
   placeholder left in, duplicate, API error).
@@ -116,7 +124,8 @@ Never paste the token into a chat, an issue, a commit or a file.
 |---|---|
 | `CHECK FAILED ... 190` | token expired or revoked (password change, app removed). Redo steps 2-4. |
 | `(#200) ... permission` | regenerate the token with all four permissions and pick the Page. |
-| generate: `rate limit` | GitHub Models free tier is used up for today; run it again tomorrow. |
+| generate: `rate limit` | the free tier is used up for now; re-run later or wait for the weekly run. |
+| generate: `API key rejected` / `could not list models` | regenerate the Gemini key and update `LLM_API_KEY`. |
 | generate: `voice.md ... blank` | fill in `brand/voice.md`. |
 | no PR opened | the "Allow GitHub Actions to create pull requests" setting is off. |
 | scheduled runs stopped | GitHub pauses schedules after 60 days with no repo activity; publishing keeps it active, or re-enable in Actions. |
