@@ -38,6 +38,12 @@ BAIT = [
     ("share-bait", r"(?i)\bshare (this|if|it|before|with (all )?your friends)\b|\bshare (to|so) (your|everyone)\b|\bbefore (it'?s|they) (deleted|removed|take it down)\b"),
     ("tag-bait", r"(?i)\btag (a friend|someone|your|3|three|5|five|a person|the friend)\b"),
     ("comment-bait", r"(?i)\b(type|comment|say)\s+[\"']?(yes|amen|done|1|ok|i'?m in|me)\b[\"']?(\s+if|\s+to|\s+for|\s*!|\s*$)"),
+    # Nepali, romanized and Devanagari. Same five Meta bait types, in the
+    # words people actually type in Nepal.
+    ("react-bait (ne)", r"(?i)\b(like|love|react)\s+(garnus|garnuhos|garnu ?hola|gara|garau|gardinus|gardinuhos)\b|\b(bhane|vane|bhaye|vaye)\s+(like|love|react)\b|(लाइक|लभ)\s*(गर्नुहोस्|गर्नुस्|गर्नु होला|गर|गरिदिनुहोस्)|भने\s*(लाइक|लभ)"),
+    ("share-bait (ne)", r"(?i)\bshare\s+(garnus|garnuhos|garnu ?hola|gara|garau|gardinus|gardinuhos)\b|\b(bhane|vane)\s+share\b|शेयर\s*(गर्नुहोस्|गर्नुस्|गर्नु होला|गर|गरिदिनुहोस्)|भने\s*शेयर"),
+    ("tag-bait (ne)", r"(?i)\b(sathi|saathi|friend)\w*\s+(lai\s+)?tag\b|\btag\s+(garnus|garnuhos|garnu ?hola|gara|garau|gardinus)\b|ट्याग\s*(गर्नुहोस्|गर्नुस्|गर)"),
+    ("comment-bait (ne)", r"(?i)[\"']?\b(ho|yes|jay\s+\w+|om|amen|done)\b[\"']?\s+(lekhnus|lekhnuhos|lekha|lekhnu ?hola)\b|(लेख्नुहोस्|लेख्नुस्)\s*$|['\"](हो|जय\s*\S+)['\"]\s*(लेख्नुहोस्|लेख्नुस्)"),
     ("copy-paste hoax", r"(?i)\b(copy and paste|copy & paste|don'?t share,? copy|facebook (is|will) (deleting|charging|start charging)|i do not give facebook permission)\b"),
 ]
 
@@ -50,6 +56,8 @@ ASKS = [
     r"(?i)\bsave (this|it)\b",
     r"(?i)\b(click|tap) (the )?(link|button)\b",
     r"(?i)\bfollow (us|me|the page)\b",
+    r"(?i)\b(message|inbox|call|phone|order|book|join|sampark|samparka)\s+(garnus|garnuhos|garnu ?hola|gara|gardinus)\b",
+    r"(म्यासेज|इनबक्स|कल|अर्डर|बुक|सम्पर्क)\s*(गर्नुहोस्|गर्नुस्|गर्नु होला)",
 ]
 
 URL_RE = r"(?i)\b(https?://\S+|www\.\S+|\b[a-z0-9-]+\.(com|net|org|io|co|np|in|shop|store|me|ly|link)(/\S*)?)\b"
