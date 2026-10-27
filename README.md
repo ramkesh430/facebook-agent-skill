@@ -23,18 +23,24 @@ on a five-check panel before you see it.
 
 ## Install
 
-In Claude Code:
+One step, in Claude Code 2.1.275 or later:
 
-```bash
-git clone https://github.com/ramkesh430/facebook-agent-skill.git
-cp -r facebook-agent-skill/skills/fb-* ~/.claude/skills/
+```
+/plugin install facebook-agent --marketplace ramkesh430/facebook-agent-skill
 ```
 
-Or as a plugin:
+On older versions, add the marketplace first:
 
 ```
 /plugin marketplace add ramkesh430/facebook-agent-skill
 /plugin install facebook-agent
+```
+
+Or copy the skills by hand:
+
+```bash
+git clone https://github.com/ramkesh430/facebook-agent-skill.git
+cp -r facebook-agent-skill/skills/fb-* ~/.claude/skills/
 ```
 
 Project-local: copy the folders into your repo's `.claude/skills/`. Keep the
