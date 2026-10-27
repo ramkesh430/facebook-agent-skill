@@ -27,7 +27,7 @@ messages, sales, event), how many hours they have, and anything happening
 | 1 | text post (story or opinion) | conversation with followers |
 | 1-2 | Group posts | community, trust (`/fb-group`) |
 | daily or most days | Stories | warm audience, messages |
-| optional | Live | Q&A, launch, event |
+| optional | Live | Q&A, launch, event (`/fb-live`) |
 
 Fewer, better posts beat a daily schedule they can't keep. Three good posts a
 week is a real plan.
@@ -62,4 +62,5 @@ doesn't have one yet, mark it `{{needs: your number}}`.
 - At most one link post per week unless they've confirmed no link limit on
   their Page (see `/fb-post`).
 - Every item is original. No "share a meme from another Page" filler.
+- If a post clearly outperforms, consider `/fb-boost` for it next week.
 - Nothing is scheduled or posted by this skill.
