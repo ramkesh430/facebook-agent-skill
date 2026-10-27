@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "note": "100-point Facebook Page (or professional-mode profile) rubric. Points are judgement calls weighted by how much each part decides whether a stranger trusts, follows or messages you. Edit the weights to match your goals.",
+  "parts": [
+    {"id": "name", "points": 8, "name": "Page name", "check": "The name people would search. Brand plus what you do or where, if the brand alone says nothing. No keyword stuffing, no emoji, under 75 characters.", "fail": "'Best Cheap Cakes Kathmandu Online Delivery 24/7' or an internal nickname nobody searches."},
+    {"id": "username", "points": 4, "name": "Username / vanity URL", "check": "Set, short, matches the name and other platforms.", "fail": "facebook.com/profile.php?id=1000... or a different handle from Instagram."},
+    {"id": "profile_photo", "points": 8, "name": "Profile picture", "check": "Readable at 40px: a face for a personal brand, a simple logo mark for a business. Not cropped by the circle.", "fail": "A full wordmark that becomes unreadable, or a photo where the face is tiny."},
+    {"id": "cover", "points": 8, "name": "Cover photo or video", "check": "Says what you do and for whom in one glance, and works on mobile (the edges get cropped). Ideally shows the outcome or the product.", "fail": "A generic stock image, or text that sits where mobile crops it."},
+    {"id": "intro", "points": 12, "name": "Intro / bio (101 chars)", "check": "Who it's for, what they get, and a reason to believe, in plain words. Reads as a promise, not a welcome.", "fail": "'Welcome to our official page!' or a list of services with no audience."},
+    {"id": "about", "points": 6, "name": "About / description (155-255 chars)", "check": "The words people search for, in sentences: what, where, for whom. This text shows in search results under the name.", "fail": "Empty, or a copy of the intro, or a mission statement with no nouns."},
+    {"id": "links", "points": 4, "name": "Linked accounts & website", "check": "Website, WhatsApp and Instagram connected and working. Links go somewhere that matches the Page.", "fail": "A dead website, or an Instagram that has nothing to do with the Page."},
+    {"id": "category", "points": 4, "name": "Category", "check": "The most specific category that fits, so Facebook search and recommendations understand you.", "fail": "'Company' or 'Personal blog' when a specific one exists."},
+    {"id": "contact", "points": 8, "name": "Contact & location", "check": "Phone or WhatsApp, email, address or service area, hours, all current. Local businesses: map pin set.", "fail": "Old phone number, missing hours, or no city at all."},
+    {"id": "action_button", "points": 8, "name": "Action button", "check": "One button matched to the one thing you want: Send message, Book now, Call, WhatsApp, Shop.", "fail": "'Learn more' to a homepage, or no button."},
+    {"id": "featured", "points": 6, "name": "Featured / pinned post", "check": "A pinned post that does the job of an intro: what you do, proof, how to start. Updated in the last 90 days.", "fail": "Nothing pinned, or a pinned 2022 promotion."},
+    {"id": "recent", "points": 10, "name": "Recent activity", "check": "Posted in the last 7 days, mostly original content, a mix that includes Reels. Nothing that looks reposted from other Pages.", "fail": "Last post six weeks ago, or a feed of shared memes from other Pages."},
+    {"id": "responsiveness", "points": 8, "name": "Message responsiveness", "check": "Replies to messages within hours. Instant reply or FAQ set so first-time messages get an answer.", "fail": "Unanswered messages in the inbox; 'typically replies within a week'."},
+    {"id": "proof", "points": 6, "name": "Reviews / recommendations & proof", "check": "Recommendations turned on (if a business) with recent real ones, and replies to them. Proof posts in the feed.", "fail": "Recommendations off, or bad reviews left unanswered."}
+  ],
+  "bands": [
+    {"min": 85, "label": "STRONG", "say": "Fix the small stuff and spend your time on content."},
+    {"min": 65, "label": "OK", "say": "Two or three fixes will change how strangers read this Page."},
+    {"min": 0, "label": "WEAK", "say": "Fix the Page before you post more. Traffic you send here is leaking."}
+  ]
+}
