@@ -1,6 +1,6 @@
 name: generate
 
-# Weekly: drafts next week's posts with GitHub Models (free) and opens a PR.
+# Weekly: drafts next week's posts with a free LLM API (Gemini by default) and opens a PR.
 # Merge the PR to approve. Close it to skip the week.
 on:
   schedule:
@@ -10,7 +10,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  models: read
 
 jobs:
   draft:
@@ -23,7 +22,9 @@ jobs:
           python-version: "3.12"
       - name: Draft posts
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          MODEL: ${{ vars.MODEL }}
         run: |
           git switch -c "drafts/$(date -u +%Y-%m-%d)"
           python automation/generate.py --summary "$RUNNER_TEMP/pr_body.md"
