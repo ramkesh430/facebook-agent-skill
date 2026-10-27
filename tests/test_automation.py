@@ -22,6 +22,7 @@ from urllib.parse import parse_qs, urlparse
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PY = sys.executable
 calls = []
+busy = {"left": 0}   # how many chat calls to answer 503 before succeeding
 passed, failed = 0, []
 
 GOOD_POST = ("We sold 46 birthday cakes in Patan last week, our best week since March.\n\n"
@@ -66,6 +67,10 @@ class Mock(BaseHTTPRequestHandler):
         ctype = self.headers.get("Content-Type", "")
         if u.path == "/llm/chat/completions":
             body = json.loads(raw)
+            if busy["left"] > 0:
+                busy["left"] -= 1
+                calls.append(("BUSY", body["model"]))
+                return self.reply(503, {"error": {"code": 503, "message": "high demand", "status": "UNAVAILABLE"}})
             calls.append(("MODELS", body["model"], body["messages"][-1]["content"][:60]))
             if "linter failed" in body["messages"][-1]["content"]:
                 posts = [{"slot": 1, "type": "text", "text": FIXED_POST}]
@@ -118,7 +123,7 @@ def main():
     shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__", "queue", "published", "failed"))
     env = dict(os.environ, GRAPH_BASE=f"http://127.0.0.1:{port}", FB_PAGE_ID="123",
                FB_PAGE_TOKEN="GOODTOKEN", LLM_BASE_URL=f"http://127.0.0.1:{port}/llm",
-               LLM_API_KEY="test-key")
+               LLM_API_KEY="test-key", RETRY_DELAY="0")
     pub = os.path.join(repo, "automation", "publish.py")
     gen = os.path.join(repo, "automation", "generate.py")
 
@@ -213,6 +218,25 @@ def main():
         check("drafts parse in publish.py", "INVALID" not in r2.stdout, r2.stdout)
         check("auto-picked gemini-2.5-flash from /models", model_calls and model_calls[0][1] == "gemini-2.5-flash", str(model_calls))
         check("PR body names the model", "gemini-2.5-flash" in pr)
+
+        # 503 "high demand": retried, then succeeds
+        busy["left"] = 2
+        calls.clear()
+        r = run(gen, "--dry-run", "--now", "2026-10-31T02:23:00+00:00")
+        check("retries after 503 and succeeds", r.returncode == 0 and len([c for c in calls if c[0] == "BUSY"]) == 2, r.stderr)
+
+        # model stays busy: falls back to the next model
+        busy["left"] = 3
+        calls.clear()
+        r = run(gen, "--dry-run", "--now", "2026-10-31T02:23:00+00:00")
+        used = [c[1] for c in calls if c[0] == "MODELS"]
+        check("falls back to next model after 3 busy replies", r.returncode == 0 and used and used[0] == "gemini-2.5-flash-lite", str(calls))
+
+        # everything busy: clear message
+        busy["left"] = 99
+        r = run(gen, "--dry-run", "--now", "2026-10-31T02:23:00+00:00")
+        busy["left"] = 0
+        check("all busy gives a clear message", r.returncode != 0 and "every model failed" in r.stderr, r.stderr[-300:])
 
         # missing / bad key
         r = run(gen, "--dry-run", LLM_API_KEY="")
