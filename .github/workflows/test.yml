@@ -16,3 +16,4 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python tests/run_tests.py
+      - run: python tests/test_automation.py
