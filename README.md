@@ -147,7 +147,8 @@ something different when you read this, Facebook is right.
 Want it to run by itself? `automation/` turns this pack into a weekly loop on
 GitHub, at no cost:
 
-1. **Saturday**: GitHub Actions drafts next week's posts with GitHub Models,
+1. **Saturday**: GitHub Actions drafts next week's posts with a free AI API
+   (Google Gemini's free tier by default; Groq works too),
    cleans them with the humanizer, lints them, and opens a pull request.
 2. **You** read the drafts on your phone, edit, and merge. Merge = approval.
 3. **Every hour**: Actions posts whatever is due to your Facebook Page through
@@ -193,9 +194,9 @@ skills/fb-viral/swipe.py       outlier ranking and formula classification
 skills/fb-page/rubric.json     the 100-point Page score
 examples/                      sample hooks, script, posts (incl. Nepali), captured.tsv
 tests/run_tests.py             end-to-end tests for every tool (run by GitHub Actions)
-tests/test_automation.py       autopilot tests against mock Graph API / GitHub Models
+tests/test_automation.py       autopilot tests against mock Graph API / LLM API
 automation/publish.py          posts due, approved queue files to your Page
-automation/generate.py         drafts next week's posts with GitHub Models
+automation/generate.py         drafts next week's posts with a free LLM API (Gemini default)
 automation/get_page_token.py   one-time: get a Page token that doesn't expire
 automation/workflows/          the two GitHub Actions workflows to copy
 templates/ideas.md             this week's facts, for the autopilot drafts

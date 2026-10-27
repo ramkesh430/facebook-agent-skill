@@ -1,14 +1,21 @@
 # Changelog
 
+## 1.2.1 - 2026-10-27
+
+- Autopilot drafting moved off GitHub Models (retired 30 July 2026) to any OpenAI-compatible API.
+  Default: Google Gemini free tier (`LLM_API_KEY` secret). Groq via the `LLM_BASE_URL` variable.
+- `model: auto` picks the best model the provider lists; clear errors for missing/bad keys and rate limits.
+- Tests: 33 autopilot checks.
+
 ## 1.2.0 - 2026-10-27
 
-- **Autopilot** (`automation/`): free weekly drafting with GitHub Models, approval by merging a pull
+- **Autopilot** (`automation/`): free weekly drafting with an LLM API, approval by merging a pull
   request, and hourly publishing to a Facebook Page through the Graph API (v26.0). Text, link and
   photo posts, with a first comment. Refuses placeholders, linter FAILs and duplicates.
 - `automation/get_page_token.py`: turns a short-lived token into a non-expiring Page token, locally.
 - `automation/SETUP.md`: step-by-step setup.
 - `templates/ideas.md`: the weekly facts file the drafts are built from.
-- `tests/test_automation.py`: 29 end-to-end checks against mock Graph API and GitHub Models servers.
+- `tests/test_automation.py`: end-to-end checks against mock Graph API and LLM servers.
 
 ## 1.1.0 - 2026-10-27
 
