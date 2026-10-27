@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "facebook-agent-skill",
+  "description": "The Facebook agent skill pack for Claude",
+  "owner": { "name": "RAM" },
+  "plugins": [
+    {
+      "name": "facebook-agent",
+      "description": "Fourteen Claude skills that run a Facebook Page: scored Reel hooks, niche research, a post linter, Groups, Messenger, and a humanizer.",
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/ramkesh430/facebook-agent-skill"
+    }
+  ]
+}

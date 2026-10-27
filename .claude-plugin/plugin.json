@@ -1,0 +1,10 @@
+{
+  "name": "facebook-agent",
+  "description": "Fourteen Claude skills that run a Facebook Page or profile: Reels off 24 scored hook formulas with a timed beat sheet, a research skill that ranks what works in your niche by outlier multiple, posts linted against the See more cut and engagement-bait rules, photos, stories, Groups, Page score, weekly plan, comments, replies, Messenger, repurposing, audits, and a humanizer.",
+  "version": "1.0.0",
+  "author": { "name": "RAM" },
+  "homepage": "https://github.com/ramkesh430/facebook-agent-skill",
+  "repository": "https://github.com/ramkesh430/facebook-agent-skill",
+  "license": "MIT",
+  "keywords": ["facebook", "reels", "groups", "messenger", "content", "humanizer", "social", "marketing"]
+}
