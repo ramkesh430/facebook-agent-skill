@@ -142,11 +142,26 @@ something different when you read this, Facebook is right.
 - **Messenger**: Pages can message people who messaged first, within Meta's
   messaging window. Automation only via Meta's tools or approved partners.
 
+## Autopilot (optional, free)
+
+Want it to run by itself? `automation/` turns this pack into a weekly loop on
+GitHub, at no cost:
+
+1. **Saturday**: GitHub Actions drafts next week's posts with GitHub Models,
+   cleans them with the humanizer, lints them, and opens a pull request.
+2. **You** read the drafts on your phone, edit, and merge. Merge = approval.
+3. **Every hour**: Actions posts whatever is due to your Facebook Page through
+   Meta's official Graph API, adds the first comment, and records the post id.
+
+Placeholders, linter FAILs and duplicates are refused at publish time. Reels,
+comments and Messenger stay manual on purpose. Setup takes about 30 minutes:
+see [`automation/SETUP.md`](automation/SETUP.md).
+
 ## The fine print
 
-**These skills don't post to Facebook.** Meta's Graph API can publish to Pages,
-but it needs a developer app, permissions, tokens and review, which a skill
-can't hand you. Browser bots and third-party "auto-poster / DM blaster" tools
+**The skills don't post to Facebook.** The optional autopilot does, but only
+through Meta's official Graph API, only to a Page you admin, and only posts you
+approved by merging. Browser bots and third-party "auto-poster / DM blaster" tools
 break Meta's Terms and get accounts restricted. So every skill ends with a
 copy-ready block, and you post it.
 
@@ -178,6 +193,12 @@ skills/fb-viral/swipe.py       outlier ranking and formula classification
 skills/fb-page/rubric.json     the 100-point Page score
 examples/                      sample hooks, script, posts (incl. Nepali), captured.tsv
 tests/run_tests.py             end-to-end tests for every tool (run by GitHub Actions)
+tests/test_automation.py       autopilot tests against mock Graph API / GitHub Models
+automation/publish.py          posts due, approved queue files to your Page
+automation/generate.py         drafts next week's posts with GitHub Models
+automation/get_page_token.py   one-time: get a Page token that doesn't expire
+automation/workflows/          the two GitHub Actions workflows to copy
+templates/ideas.md             this week's facts, for the autopilot drafts
 templates/voice.md             your voice profile. Fill this in first.
 ```
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 - 2026-10-27
+
+- **Autopilot** (`automation/`): free weekly drafting with GitHub Models, approval by merging a pull
+  request, and hourly publishing to a Facebook Page through the Graph API (v26.0). Text, link and
+  photo posts, with a first comment. Refuses placeholders, linter FAILs and duplicates.
+- `automation/get_page_token.py`: turns a short-lived token into a non-expiring Page token, locally.
+- `automation/SETUP.md`: step-by-step setup.
+- `templates/ideas.md`: the weekly facts file the drafts are built from.
+- `tests/test_automation.py`: 29 end-to-end checks against mock Graph API and GitHub Models servers.
+
 ## 1.1.0 - 2026-10-27
 
 - New skill `/fb-live`: plan and script a Facebook Live, from announcement to replay clips.
